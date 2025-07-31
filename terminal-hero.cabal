@@ -19,7 +19,7 @@ executable terminal-hero
 
     -- Outras dependências necessárias
     build-depends:    base >=4.7 && <5, 
-                      gloss,
+                      ansi-terminal,
                       random
 
     hs-source-dirs:   app
