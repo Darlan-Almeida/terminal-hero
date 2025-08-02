@@ -23,6 +23,7 @@ height = 25
 
 type Note = (Char, Int, Bool) -- tecla, linha, acertada?
 
+data Difficulty = Easy | Medium | Hard deriving (Eq, Show)
 data GameState = GameState
   { notes    :: [Note]
   , score    :: Int
@@ -30,13 +31,14 @@ data GameState = GameState
   , gen      :: StdGen
   , gameOver :: Bool
   , gameWon  :: Bool
+  , diff     :: Difficulty
   }
 
 -- Inicialização
-initGame :: IO GameState
-initGame = do
+initGame :: Difficulty -> IO GameState
+initGame diff = do
   g <- newStdGen
-  return $ GameState [] 0 0 g False False
+  return $ GameState [] 0 0 g False False diff
 
 -- Geração e movimentação
 addRandomNote :: StdGen -> [Note] -> ([Note], StdGen)
@@ -76,7 +78,11 @@ tick gs =
       
       -- Checagem das notas perdidas
       (missedNotes, remainingNotes) = partition (\(_, y, hit) -> y >= height && not hit) newNotes
-      missPenalty = length missedNotes * (1 + combo gs `div` 2)
+      missPenalityPerDiff = case diff gs of
+        Easy -> 1
+        Medium -> 2
+        Hard -> 3
+      missPenalty = length missedNotes * (missPenalityPerDiff + combo gs `div` 2)
       newScore = score gs - missPenalty
       newCombo = if null missedNotes then combo gs else 0
       isGameOver = newScore < -10
@@ -95,7 +101,15 @@ applyInput c gs
   | c `elem` columns =
       let (hit, rest) = partition (\(nc, y, _) -> nc == c && isHitZone y) (notes gs)
           markedHits = map (\(nc, y, _) -> (nc, y, True)) hit
-          newScore = if null hit then score gs - 1 else score gs + 1 + combo gs
+          gainPoints = case diff gs of
+            Easy -> 3
+            Medium -> 2
+            Hard -> 1
+          lossPoints = case diff gs of
+            Easy -> 1
+            Medium -> 2
+            Hard -> 3
+          newScore = if null hit then score gs - lossPoints else score gs + gainPoints + combo gs
           newCombo = if null hit then 0 else combo gs + 1
           isGameOver = newScore < -10
           isGameWon = newScore >= 1000  -- Win condition
@@ -162,8 +176,11 @@ drawGame :: GameState -> IO ()
 drawGame gs = do
   setCursorPosition 0 0
   hFlush stdout
-  
-  let header = "Score: " ++ show (score gs) ++ "  Combo: " ++ show (combo gs)
+  let (diffColor, diffLevel) = case diff gs of
+                  Easy   -> (Green,"Easy")
+                  Medium -> (Yellow,"Medium")
+                  Hard   -> (Red,"Hard")
+  let header = "Score: " ++ show (score gs) ++ "  Combo: " ++ show (combo gs) ++ "  Dificuldade: " ++ setSGRCode [SetColor Foreground Vivid diffColor] ++ diffLevel ++ setSGRCode [Reset]
   putStrLn header
 
   putStrLn $ concatMap (const $ replicate colWidth '─') columns
@@ -200,7 +217,7 @@ mainLoop !gs
         ' ' -> do
           clearScreen  -- Limpa a tela antes de reiniciar
           setCursorPosition 0 0 
-          initGame >>= mainLoop  -- Resetar o game no espaço
+          initGame (diff gs) >>= mainLoop  -- Resetar o game no espaço
         _   -> mainLoop gs          
   | otherwise = do
       drawGame gs
@@ -208,6 +225,27 @@ mainLoop !gs
       let nextGS = gameStep gs input
       threadDelay (speed (score nextGS) `div` 2)
       mainLoop nextGS
+
+--Menu de seleção de dificuldade
+difficultyMenu :: IO ()
+difficultyMenu = do
+  clearScreen
+  setCursorPosition 0 0
+
+  putStrLn $ setSGRCode [SetColor Foreground Vivid Red] ++ asciiTitle ++ setSGRCode [Reset] 
+  putStrLn "Selecione a Dificuldade:"
+  putStrLn "1. Easy"
+  putStrLn "2. Medium"
+  putStrLn "3. Hard"
+  putStr "\nOpção: "
+  hFlush stdout
+
+  choice <- getChar
+  case choice of
+    '1' -> do clearScreen; setCursorPosition 0 0; initGame Easy >>= mainLoop
+    '2' -> do clearScreen; setCursorPosition 0 0; initGame Medium >>= mainLoop
+    '3' -> do clearScreen; setCursorPosition 0 0; initGame Hard >>= mainLoop
+    _   -> difficultyMenu
 
 -- Menu
 mainMenu :: IO ()
@@ -227,10 +265,7 @@ mainMenu = do
 
   choice <- getChar
   case choice of
-    '1' -> do
-      clearScreen
-      setCursorPosition 0 0
-      initGame >>= mainLoop
+    '1' -> difficultyMenu
     '2' -> do
       clearScreen
       showCursor
