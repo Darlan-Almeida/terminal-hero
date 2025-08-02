@@ -9,6 +9,7 @@ import Control.Monad (forM_, when)
 import Data.List (partition, find)
 import Data.Char (toUpper)
 import Text.Printf (printf)
+import Assets.Title (asciiTitle)
 
 -- Configurações
 colWidth :: Int
@@ -159,29 +160,23 @@ drawKey c =
 
 drawGame :: GameState -> IO ()
 drawGame gs = do
-  putStr "\ESC[2J\ESC[H"
+  setCursorPosition 0 0
   hFlush stdout
   
-  -- Score display with combo
-  setSGR [SetConsoleIntensity BoldIntensity]
-  putStrLn $ "Score: " ++ show (score gs) ++ "  Combo: " ++ show (combo gs)
-  setSGR [Reset]
-  
-  -- Top border
+  let header = "Score: " ++ show (score gs) ++ "  Combo: " ++ show (combo gs)
+  putStrLn header
+
   putStrLn $ concatMap (const $ replicate colWidth '─') columns
-  
+
   -- Game area
   forM_ [0..height] $ \y -> do
     if y == hitLine
-      then putStrLn drawHitLineBackground  -- Special hit line display
+      then putStrLn drawHitLineBackground
       else do
         let line = concatMap (\col -> drawCell col y (notes gs)) columns
         putStrLn line
-  
-  -- Bottom border
+
   putStrLn $ concatMap (const $ replicate colWidth '─') columns
-  
-  -- Key display
   putStrLn $ concatMap drawKey columns
   putStrLn "\nUse A, S, J, K para tocar. Pule com 'espaço' para recomeçar o show."
 
@@ -202,7 +197,10 @@ mainLoop !gs
       drawGame gs
       input <- getChar  
       case input of
-        ' ' -> initGame >>= mainLoop  -- Resetar o game no espaço
+        ' ' -> do
+          clearScreen  -- Limpa a tela antes de reiniciar
+          setCursorPosition 0 0 
+          initGame >>= mainLoop  -- Resetar o game no espaço
         _   -> mainLoop gs          
   | otherwise = do
       drawGame gs
@@ -211,11 +209,35 @@ mainLoop !gs
       threadDelay (speed (score nextGS) `div` 2)
       mainLoop nextGS
 
--- Inicialização
-main :: IO ()
-main = do
+-- Menu
+mainMenu :: IO ()
+mainMenu = do
+  clearScreen
+  setCursorPosition 0 0
   hSetBuffering stdin NoBuffering
   hSetBuffering stdout NoBuffering
   hSetEcho stdin False
   hideCursor
-  initGame >>= mainLoop
+ 
+  putStrLn $ setSGRCode [SetColor Foreground Vivid Red] ++ asciiTitle ++ setSGRCode [Reset] 
+  putStrLn "1. Iniciar Jogo"
+  putStrLn "2. Sair"
+  putStr "\nEscolha uma opção: "
+  hFlush stdout
+
+  choice <- getChar
+  case choice of
+    '1' -> do
+      clearScreen
+      setCursorPosition 0 0
+      initGame >>= mainLoop
+    '2' -> do
+      clearScreen
+      showCursor
+      setSGR [Reset]
+      putStrLn "Saindo de Terminal Hero"      
+    _ -> mainMenu 
+
+-- Inicialização
+main :: IO ()
+main = mainMenu

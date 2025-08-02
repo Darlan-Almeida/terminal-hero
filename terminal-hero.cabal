@@ -22,5 +22,5 @@ executable terminal-hero
                       ansi-terminal,
                       random
 
-    hs-source-dirs:   app
+    hs-source-dirs:   app src
     default-language: Haskell2010
