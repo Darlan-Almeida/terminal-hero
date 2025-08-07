@@ -10,6 +10,7 @@ import Data.List (partition, find)
 import Data.Char (toUpper)
 import Text.Printf (printf)
 import Assets.Title (asciiTitle)
+import Data.Time.Clock
 
 -- Configurações
 colWidth :: Int
@@ -224,17 +225,19 @@ mainLoop !gs
       drawGame gs
       input <- getChar  
       case input of
-        ' ' -> do
-          clearScreen  -- Limpa a tela antes de reiniciar
-          setCursorPosition 0 0 
-          initGame (diff gs) >>= mainLoop  -- Resetar o game no espaço com a mesma dificuldade
+        ' ' -> clearScreen >> setCursorPosition 0 0 >> initGame (diff gs) >>= mainLoop
         'm' -> mainMenu
-        _ -> mainLoop gs          
+        _ -> mainLoop gs
   | otherwise = do
+      let frameTime = speed (score gs)
+      startTime <- getCurrentTime
       drawGame gs
-      input <- timeout (speed (score gs)) getChar
+      input <- timeout frameTime getChar
       let nextGS = gameStep gs input
-      threadDelay (speed (score nextGS) `div` 2)
+      endTime <- getCurrentTime
+      let elapsedMicros = round $ 1000000 * realToFrac (diffUTCTime endTime startTime)
+          remainingTime = max 0 (frameTime - elapsedMicros)
+      threadDelay remainingTime
       mainLoop nextGS
 
 --Encapsulamento das instruções
