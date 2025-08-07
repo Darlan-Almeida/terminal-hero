@@ -204,17 +204,18 @@ drawGame gs = do
 
   putStrLn $ concatMap (const $ replicate colWidth '─') columns
   putStrLn $ concatMap drawKey columns
-  putStrLn "\nUse A, S, J, K para tocar. Pule com 'espaço' para recomeçar o show."
 
   when (gameOver gs) $ do
     setSGR [SetColor Foreground Vivid Red, SetConsoleIntensity BoldIntensity]
-    putStrLn "GAME OVER! Aperte 'espaço' para reiniciar"
+    putStrLn "GAME OVER!" 
     setSGR [Reset]
+    putStrLn "Aperte 'espaço' para reiniciar ou 'm' para voltar ao Menu"
   
   when (gameWon gs) $ do
     setSGR [SetColor Foreground Vivid Green, SetConsoleIntensity BoldIntensity]
     putStrLn "YOU ROCK!"
     setSGR [Reset]
+    putStrLn "Aperte 'm' para voltar ao Menu"
 
 -- Loop principal de I/O
 mainLoop :: GameState -> IO ()
@@ -226,8 +227,9 @@ mainLoop !gs
         ' ' -> do
           clearScreen  -- Limpa a tela antes de reiniciar
           setCursorPosition 0 0 
-          initGame (diff gs) >>= mainLoop  -- Resetar o game no espaço
-        _   -> mainLoop gs          
+          initGame (diff gs) >>= mainLoop  -- Resetar o game no espaço com a mesma dificuldade
+        'm' -> mainMenu
+        _ -> mainLoop gs          
   | otherwise = do
       drawGame gs
       input <- timeout (speed (score gs)) getChar
@@ -235,6 +237,10 @@ mainLoop !gs
       threadDelay (speed (score nextGS) `div` 2)
       mainLoop nextGS
 
+--Encapsulamento das instruções
+gameInstructions :: IO ()
+gameInstructions = putStrLn "\n========CONTROLES========\nA, S, J, K para tocar!\nAcertos em sequência geram combos.\nCombos garantem bônus de pontuação!"
+ 
 --Menu de seleção de dificuldade
 difficultyMenu :: IO ()
 difficultyMenu = do
@@ -243,10 +249,10 @@ difficultyMenu = do
 
   putStrLn $ setSGRCode [SetColor Foreground Vivid Red] ++ asciiTitle ++ setSGRCode [Reset] 
   putStrLn "Selecione a Dificuldade:"
-  putStrLn "1. Easy"
-  putStrLn "2. Medium"
-  putStrLn "3. Hard"
-  putStr "\nOpção: "
+  putStrLn $ setSGRCode [SetColor Foreground Vivid Green] ++ "1. Easy" ++ setSGRCode [Reset]
+  putStrLn $ setSGRCode [SetColor Foreground Vivid Yellow] ++ "2. Medium" ++ setSGRCode [Reset]
+  putStrLn $ setSGRCode [SetColor Foreground Vivid Red] ++ "3. Hard" ++ setSGRCode [Reset]
+  gameInstructions
   hFlush stdout
 
   choice <- getChar
