@@ -65,6 +65,13 @@ drawHitLineBackground = concatMap (\_ -> setSGRCode [SetConsoleIntensity BoldInt
 isHitZone :: Int -> Bool
 isHitZone y = y >= hitLine - 1 && y <= hitLine + 1
 
+
+-- A chance da nota ser gerada é baseada na dificuldade escolihda
+noteGenChance :: Difficulty -> Float
+noteGenChance Easy   = 0.25
+noteGenChance Medium = 0.5
+noteGenChance Hard   = 0.75
+
 -- Função funcional de atualização (tick)
 tick :: GameState -> (Bool, GameState)
 tick gs =
@@ -73,7 +80,9 @@ tick gs =
     
       movedNotes = moveNotesDown activeNotes
       
-      (shouldAdd, g1) = random (gen gs)
+      (randVal, g1) = randomR (0.0, 1.0) (gen gs)
+      shouldAdd = randVal < noteGenChance (diff gs)
+
       (newNotes, g2) = if shouldAdd then addRandomNote g1 movedNotes else (movedNotes, g1)
       
       -- Checagem das notas perdidas
@@ -136,11 +145,11 @@ gameStep gs mInput
 -- Velocidade adaptativa
 speed :: Int -> Int
 speed sc 
-  | sc < 10   = 150000  
-  | sc < 30   = 120000  
-  | sc < 50   = 100000  
-  | sc < 100  = 80000  
-  | otherwise = max 50000 (100000 - sc * 300) 
+  | sc < 20   = 140000  
+  | sc < 50   = 130000  
+  | sc < 80   = 125000  
+  | sc < 120  = 100000  
+  | otherwise = max 70000 (100000 - sc * 300) 
 
 -- Renderização
 centerText :: String -> String
