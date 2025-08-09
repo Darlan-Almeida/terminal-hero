@@ -12,6 +12,12 @@ extra-doc-files:    CHANGELOG.md
 common warnings
     ghc-options: -Wall
 
+library
+  exposed-modules:     TerminalHero
+  hs-source-dirs:      src
+  build-depends:       base >=4.7 && <5, random, ansi-terminal
+  default-language:    Haskell2010
+
 executable terminal-hero
     import:           warnings
 
@@ -20,7 +26,15 @@ executable terminal-hero
     -- Outras dependências necessárias
     build-depends:    base >=4.7 && <5, 
                       ansi-terminal,
-                      random
+                      random,
+                      time
 
     hs-source-dirs:   app src
     default-language: Haskell2010
+
+test-suite terminal-hero-tests
+  type:                exitcode-stdio-1.0
+  hs-source-dirs:      tests, src, app
+  main-is:             Tests.hs
+  build-depends:       base, HUnit, terminal-hero, random, ansi-terminal
+  default-language:    Haskell2010
