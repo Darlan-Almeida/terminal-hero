@@ -70,8 +70,8 @@ cabal run       # executa o jogo
 
 > (Dependente de como o jogo foi implementado)
 
-- Teclas: `A`, `S`, `D`, `F` para acertar as notas.
-- Pontuação é mostrada no canto da tela.
+- Teclas: `A`, `S`, `J`, `K` para acertar as notas.
+- Pontuação e Combos são mostrados no canto superior da interface.
 - Notas caem de cima e devem ser pressionadas no tempo certo.
 
 ---
@@ -92,3 +92,7 @@ cabal run       # executa o jogo
 ---
 
 Feito com ❤️ e Haskell.
+
+### Docs com funcionalidades do projeto
+https://docs.google.com/document/d/1ur6RbqMDHaa-zNUNkXIWdY6Q51y-UFhaHQI1seneUY8/edit?tab=t.0
+
